@@ -19,28 +19,62 @@ public class MathOperation {
     }
 
     public BigDecimal doOperation(String op, BigDecimal a, BigDecimal b) {
+        // first: validate the operation type
         OperationType operationType;
         try {
             operationType = OperationType.valueOf(op.toUpperCase());
             if(operationType == OperationType.ANY) {
-                logger.info("Operation type is ANY, defaulting to ADD operation.");
-                operationType = OperationType.ADD; // Default behavior for ANY operation
+                throw new IllegalArgumentException(
+                        "ANY cannot be used as a calculation operation");            
             }
         } catch (IllegalArgumentException e) {
-            logger.error("Invalid operation type: {}", op);
             throw new IllegalArgumentException("Invalid operation type: " + op);
         }
-        BigDecimal result = calculate(operationType, a, b);
+
+        // Perform the arithmetic operation
+        BigDecimal operand1 = a;
+        BigDecimal operand2 = b;
+        BigDecimal result = calculate(operationType, operand1, operand2);
+
+        // Retrieve applicable business rules, check if they are triggered, and apply them to the result
         for (BusinessRule rule : ruleService.getRules(operationType)) {
-            logger.info("Retrieved rule for operation {}: {} with trigger {} and action {}", op, rule.getTrigger().operation(), rule.getTrigger().operation(), rule.getAction().operator());
-            logger.info("Rule triggered: {}", isTriggered(a, b, result, rule));
-            if (isTriggered(a, b, result, rule)) {
-                result = applyRuleAction(a, b, result, rule);
+            logger.info("Evaluating rule: {}", rule.getName());
+
+            boolean triggered = isTriggered(operand1, operand2, result, rule);
+            logger.info("Rule triggered: {}", triggered);
+            if (!triggered) {
+                continue;
             }
+
+            RuleAction action = rule.getAction();
+            logger.info("Applying action: {} {} to {}", action.operator(),action.value(), action.target());
+
+            // Apply action to the correct target
+            switch (action.target()) {
+                case OPERAND1:
+                    operand1 = calculate(action.operator(), operand1, action.value());
+                    break;
+                case OPERAND2:
+                    operand2 = calculate(action.operator(), operand2, action.value());
+                    break;
+                case RESULT:
+                    result = calculate(action.operator(), result, action.value());
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unsupported action target: "+ action.target());
+            }
+
+            // If an operand changed, recalculate the result
+            if (action.target() == TargetType.OPERAND1 || action.target() == TargetType.OPERAND2) {
+                result = calculate(operationType,operand1,operand2);
+                logger.info("Recalculated result: {}", result);
+            }       
         }
         return result.setScale(2, RoundingMode.HALF_UP); // Round the result to 2 decimal places
     }
 
+   
+    // Perform the arithmetic operation based on the operation type
     private BigDecimal calculate(OperationType op, BigDecimal a, BigDecimal b) {
         switch (op) {
             case ADD:
@@ -54,16 +88,27 @@ public class MathOperation {
                     throw new IllegalArgumentException("Division by zero is not allowed.");
                 }
                 return a.divide(b, 10, RoundingMode.HALF_UP);
-            case ANY:
-                return a.add(b); // Default behavior for ANY operation, can be customized as needed
             default:
-                logger.error("Unsupported operation: {}", op);
                 throw new IllegalArgumentException("Unsupported operation: " + op);
         }
     }
 
+    // Check if the rule is triggered based on the rule trigger and the operation values
     private boolean isTriggered(BigDecimal a, BigDecimal b, BigDecimal result, BusinessRule rule) {
-        BigDecimal value = getTarget(rule.getTrigger().target(), a, b, result);
+        BigDecimal value;
+        switch (rule.getTrigger().target()) {
+            case OPERAND1:
+                value = a;
+                break;
+            case OPERAND2:
+                value = b;
+                break;
+            case RESULT:
+                value = result;
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported target type: " + rule.getTrigger().target());
+        }        
         switch (rule.getTrigger().operator()) {
             case EQUALS:
                 return value.compareTo(rule.getTrigger().value()) == 0;
@@ -72,34 +117,14 @@ public class MathOperation {
             case GREATER:
                 return value.compareTo(rule.getTrigger().value()) > 0;
             case GREATER_OR_EQUALS:
-                return value.compareTo(rule.getTrigger().value()) > 0;
+                return value.compareTo(rule.getTrigger().value()) >= 0;
             case LESS:
                 return value.compareTo(rule.getTrigger().value()) < 0;
             case LESS_OR_EQUALS:
-                return value.compareTo(rule.getTrigger().value()) < 0;
+                return value.compareTo(rule.getTrigger().value()) <= 0;
             default:
-                logger.error("Unsupported operator type: {}", rule.getTrigger().operator());
                 throw new IllegalArgumentException("Unsupported operator type: " + rule.getTrigger().operator());
         }
     }
-
-    private BigDecimal applyRuleAction(BigDecimal a, BigDecimal b, BigDecimal result, BusinessRule rule) {
-        BigDecimal value = getTarget(rule.getAction().target(), a, b, result);
-        logger.info("Applying action to value: {} {}", rule.getAction().operator(), value);
-        return calculate(rule.getAction().operator(), rule.getAction().value(), value); // Return the modified result (if applicable)
-    }
-
-    private BigDecimal getTarget(TargetType target, BigDecimal a, BigDecimal b, BigDecimal result) {
-        switch (target) {
-            case OPERAND1:
-                return a;
-            case OPERAND2:
-                return b;
-            case RESULT:
-                return result;
-            default:
-                logger.error("Unsupported target type: {}", target);
-                throw new IllegalArgumentException("Unsupported target type: " + target);
-        }
-    }
+    
 }

@@ -16,7 +16,7 @@ public class RuleService {
     public List<BusinessRule> getRules(OperationType operation) {
         List<BusinessRule> rules = new ArrayList<BusinessRule>();
         for (BusinessRule rule : businessRepository.findByActiveTrue()) {
-            if (rule.getTrigger().operation() == operation) {
+            if (rule.getTrigger().operation() == operation || rule.getTrigger().operation() == OperationType.ANY) {
                 rules.add(rule);
             }
         }

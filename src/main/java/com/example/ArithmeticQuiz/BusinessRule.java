@@ -15,6 +15,8 @@ public class BusinessRule {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String name;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private RuleTrigger trigger;
@@ -32,6 +34,14 @@ public class BusinessRule {
         return id;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    
     public RuleTrigger getTrigger() {
         return trigger;
     }
