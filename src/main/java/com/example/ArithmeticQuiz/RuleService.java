@@ -32,7 +32,7 @@ public class RuleService {
     // GET: Retrieve all active rules
     public List<BusinessRule> getRules(OperationType operation) {
         List<BusinessRule> rules = new ArrayList<BusinessRule>();
-        for (BusinessRule rule : businessRepository.findByActiveTrue()) {
+        for (BusinessRule rule : businessRepository.findByActiveTrueOrderByIdAsc()) {
             if (rule.getTrigger().operation() == operation || rule.getTrigger().operation() == OperationType.ANY) {
                 rules.add(rule);
             }
@@ -42,7 +42,6 @@ public class RuleService {
 
     // POST: Create a new rule
     public BusinessRule createRule(BusinessRule rule) {
-        rule.setActive(true);
         return businessRepository.save(rule);
     }
 

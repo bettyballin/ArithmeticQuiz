@@ -4,6 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+
 import java.util.List;
 
 @RestController
@@ -18,7 +20,7 @@ public class RuleController {
 
     // POST /api/rules
     @PostMapping
-    public ResponseEntity<BusinessRule> createRule(@RequestBody BusinessRule rule) {
+    public ResponseEntity<BusinessRule> createRule(@Valid @RequestBody BusinessRule rule) {
         BusinessRule created = ruleService.createRule(rule);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -37,7 +39,7 @@ public class RuleController {
 
     // PUT /api/rules/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<BusinessRule> updateRule(@PathVariable Long id,@RequestBody BusinessRule rule) {
+    public ResponseEntity<BusinessRule> updateRule(@PathVariable Long id, @Valid @RequestBody BusinessRule rule) {
         return ResponseEntity.ok(ruleService.updateRule(id, rule));
     }
 

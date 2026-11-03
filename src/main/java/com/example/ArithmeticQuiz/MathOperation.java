@@ -2,6 +2,8 @@ package com.example.ArithmeticQuiz;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,64 +20,63 @@ public class MathOperation {
         this.ruleService = ruleService;
     }
 
+    // Perform the specified arithmetic operation on the two operands, 
+    // apply any applicable business rules, and return the final result
     public BigDecimal doOperation(String op, BigDecimal a, BigDecimal b) {
-        // first: validate the operation type
+        // First: validate the operation type
         OperationType operationType;
         try {
             operationType = OperationType.valueOf(op.toUpperCase());
-            if(operationType == OperationType.ANY) {
-                throw new IllegalArgumentException(
-                        "ANY cannot be used as a calculation operation");            
-            }
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid operation type: " + op);
         }
+        if (operationType == OperationType.ANY) {
+            throw new IllegalArgumentException("ANY cannot be used as a calculation operation");
+        }
 
-        // Perform the arithmetic operation
         BigDecimal operand1 = a;
         BigDecimal operand2 = b;
-        BigDecimal result = calculate(operationType, operand1, operand2);
+        List<BusinessRule> rules = ruleService.getRules(operationType);
 
-        // Retrieve applicable business rules, check if they are triggered, and apply them to the result
-        for (BusinessRule rule : ruleService.getRules(operationType)) {
+        // Modify operands first
+        // Evaluate each rule and apply the action if the trigger condition is met
+        for (BusinessRule rule : rules) {
             logger.info("Evaluating rule: {}", rule.getName());
-
-            boolean triggered = isTriggered(operand1, operand2, result, rule);
-            logger.info("Rule triggered: {}", triggered);
-            if (!triggered) {
+            RuleAction action = rule.getAction();
+            if (action.target() == TargetType.RESULT || rule.getTrigger().target() == TargetType.RESULT) {
+                // not applicable to operands, skip it
+                continue; 
+            }
+            if (!isTriggered(operand1, operand2, null, rule)) {
                 continue;
             }
-
-            RuleAction action = rule.getAction();
-            logger.info("Applying action: {} {} to {}", action.operator(),action.value(), action.target());
-
-            // Apply action to the correct target
-            switch (action.target()) {
-                case OPERAND1:
-                    operand1 = calculate(action.operator(), operand1, action.value());
-                    break;
-                case OPERAND2:
-                    operand2 = calculate(action.operator(), operand2, action.value());
-                    break;
-                case RESULT:
-                    result = calculate(action.operator(), result, action.value());
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unsupported action target: "+ action.target());
+            logger.info("Pre-calculating rule '{}': {} {} on {}", rule.getName(), action.operator(), action.value(), action.target());
+            if (action.target() == TargetType.OPERAND1) {
+                // let rule action modify operand1
+                operand1 = calculate(action.operator(), operand1, action.value());
+            } else { // or operand2
+                operand2 = calculate(action.operator(), operand2, action.value());
             }
+        }
+        // Perform the arithmetic operation and get the result
+        BigDecimal result = calculate(operationType, operand1, operand2);
+        logger.info("Performed operation {} on operands {} and {}, result: {}", operationType, operand1, operand2, result);
 
-            // If an operand changed, recalculate the result
-            if (action.target() == TargetType.OPERAND1 || action.target() == TargetType.OPERAND2) {
-                result = calculate(operationType,operand1,operand2);
-                logger.info("Recalculated result: {}", result);
-            }       
+        // Loop through the rules again to apply any actions that target the result
+        for (BusinessRule rule : rules) {
+            RuleAction action = rule.getAction();
+            if (rule.getTrigger().target() != TargetType.RESULT || !isTriggered(operand1, operand2, result, rule)) {
+                // not applicable, skip
+                continue;
+            }
+            logger.info("Applying rule '{}': {} {} on RESULT", rule.getName(), action.operator(), action.value());
+            result = calculate(action.operator(), result, action.value());
         }
         return result.setScale(2, RoundingMode.HALF_UP); // Round the result to 2 decimal places
     }
-
    
     // Perform the arithmetic operation based on the operation type
-    private BigDecimal calculate(OperationType op, BigDecimal a, BigDecimal b) {
+    public BigDecimal calculate(OperationType op, BigDecimal a, BigDecimal b) {
         switch (op) {
             case ADD:
                 return a.add(b);

@@ -49,6 +49,7 @@ POST:
 ### Business Rules
 
 | Method | Endpoint | Description |
+|---|---|---|
 | POST | `/api/rules` | Create a rule |
 | GET | `/api/rules` | Get all rules |
 | GET | `/api/rules/{id}` | Get a rule by ID |

@@ -17,17 +17,20 @@ public class MathController {
         this.mathOperation = mathOperation;
     }
 
+    // Request body for the calculation operation
     public record CalculationRequest(
+            // Using @NotNull to ensure that the operands are provided in the request
             @NotNull BigDecimal a,
             @NotNull BigDecimal b
     ) {}
 
+    // Endpoint to perform the arithmetic operation on a and b and the operation type
     @PostMapping("/{operation}")
-    public BigDecimal doOperation(
+    public String doOperation(
             @PathVariable String operation,
             @Valid @RequestBody CalculationRequest request) {
 
-        return mathOperation.doOperation(
+        return "result: " +mathOperation.doOperation(
                 operation,
                 request.a(),
                 request.b()
