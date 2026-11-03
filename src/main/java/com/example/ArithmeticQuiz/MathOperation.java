@@ -43,12 +43,13 @@ public class MathOperation {
         for (BusinessRule rule : rules) {
             logger.info("Evaluating rule: {}", rule.getName());
             RuleAction action = rule.getAction();
-            if (action.target() == TargetType.RESULT || rule.getTrigger().target() == TargetType.RESULT) {
-                // not applicable to operands, skip it
-                continue; 
-            }
-            if (!isTriggered(operand1, operand2, null, rule)) {
+            if (action.target() == TargetType.RESULT) {
                 continue;
+            }
+            if (rule.getTrigger().target() == TargetType.RESULT) {
+                if (!isTriggered(operand1, operand2, calculate(operationType, operand1, operand2), rule)) {
+                    continue;
+                }
             }
             logger.info("Pre-calculating rule '{}': {} {} on {}", rule.getName(), action.operator(), action.value(), action.target());
             if (action.target() == TargetType.OPERAND1) {
@@ -65,8 +66,7 @@ public class MathOperation {
         // Loop through the rules again to apply any actions that target the result
         for (BusinessRule rule : rules) {
             RuleAction action = rule.getAction();
-            if (rule.getTrigger().target() != TargetType.RESULT || !isTriggered(operand1, operand2, result, rule)) {
-                // not applicable, skip
+            if (action.target() != TargetType.RESULT || !isTriggered(operand1, operand2, result, rule)) {
                 continue;
             }
             logger.info("Applying rule '{}': {} {} on RESULT", rule.getName(), action.operator(), action.value());
@@ -89,6 +89,8 @@ public class MathOperation {
                     throw new IllegalArgumentException("Division by zero is not allowed.");
                 }
                 return a.divide(b, 10, RoundingMode.HALF_UP);
+            case SET:
+                return b;
             default:
                 throw new IllegalArgumentException("Unsupported operation: " + op);
         }

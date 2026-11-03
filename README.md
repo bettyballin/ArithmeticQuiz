@@ -36,6 +36,12 @@ Examples:
 
 Rules are stored in PostgreSQL as JSONB and can be managed through the REST API.
 
+How rules are applied:
+1. Active rules matching the operation (or ANY) are loaded, ordered by id. 
+2. Rules whose action modifies an operand run before the calculation. 
+3. The calculation runs once. 
+4. Rules whose action modifies the result run after it. 
+
 ## REST Endpoints
 
 ### Mathematical Operations
@@ -45,6 +51,7 @@ POST:
 `/api/math/SUBTRACT`
 `/api/math/MULTIPLY`
 `/api/math/DIVIDE`
+`/api/math/SET`
 
 ### Business Rules
 
@@ -72,7 +79,16 @@ cd ArithmeticQuiz
 
 3. Configure PostgreSQL in `src/main/resources/application.properties`.
 
-4. Start the application:
+4. (Optional) Tests:
+
+```bash
+./gradlew test 
+```
+
+No database needed for the tests.
+
+
+5. Start the application:
 
 ```bash
 ./gradlew bootRun

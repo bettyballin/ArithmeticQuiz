@@ -8,5 +8,6 @@ public enum OperationType {
     SUBTRACT,
     MULTIPLY,
     DIVIDE,
+    SET,
     ANY
 }

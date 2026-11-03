@@ -24,19 +24,19 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-        // private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+        private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
         @ExceptionHandler(IllegalArgumentException.class)
         public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
                 // Print error in Spring Boot console
-                // logger.error("ERROR: {}", ex.getMessage());
+                logger.error("ERROR: {}", ex.getMessage());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
         }
 
         @ExceptionHandler(Exception.class)
         public ResponseEntity<Map<String, String>> handleGeneralError(Exception ex) {
                 // Print unexpected errors in Spring Boot console
-                // logger.error("UNEXPECTED ERROR: ", ex);
+                logger.error("UNEXPECTED ERROR: ", ex);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                         Map.of("error", "Internal server error"));
         }
@@ -44,7 +44,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         @ExceptionHandler(ResponseStatusException.class) 
         public ResponseEntity<Map<String, String>> handleResponseStatus(ResponseStatusException ex) {
                 // Print response status errors in Spring Boot console
-                // logger.warn("HTTP ERROR: {}", ex.getReason());
+                logger.error("HTTP ERROR: {}", ex.getReason());
                 return ResponseEntity.status(ex.getStatusCode()).body(Map.of("error", ex.getReason()));
         }
 
@@ -54,14 +54,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 List<String> details = ex.getBindingResult().getAllErrors().stream()
                         .map(error -> (error instanceof FieldError field ? field.getField() : error.getObjectName())
                          + ": " + error.getDefaultMessage()).toList();
-                // logger.warn("VALIDATION ERROR: {}", details);
+                logger.error("VALIDATION ERROR: {}", details);
                 return ResponseEntity.badRequest().body(Map.of("error", "Validation failed", "details", details));
         }       
 
         @Override
         protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
                 // Print malformed request body errors in Spring Boot console
-                // logger.warn("MALFORMED REQUEST BODY: {}", ex.getMessage());
+                logger.error("MALFORMED REQUEST BODY: {}", ex.getMessage());
                 String message = "Malformed request body";
                 if (ex.getMostSpecificCause() instanceof InvalidFormatException ife) {
                         message = "Invalid value '" + ife.getValue() + "'";

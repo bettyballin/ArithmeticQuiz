@@ -11,5 +11,5 @@ import jakarta.validation.constraints.NotNull;
 public record RuleAction(
     @NotNull BigDecimal value,
     @NotNull TargetType target, // RESULT, OPERAND1, OPERAND2
-    @NotNull OperationType operator // ADD, SUBTRACT, MULTIPLY, DIVIDE
+    @NotNull OperationType operator // ADD, SUBTRACT, MULTIPLY, DIVIDE, SET, ANY
 ){}
