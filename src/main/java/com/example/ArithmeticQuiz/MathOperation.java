@@ -46,10 +46,11 @@ public class MathOperation {
             if (action.target() == TargetType.RESULT) {
                 continue;
             }
-            if (rule.getTrigger().target() == TargetType.RESULT) {
-                if (!isTriggered(operand1, operand2, calculate(operationType, operand1, operand2), rule)) {
-                    continue;
-                }
+            BigDecimal triggerValue = rule.getTrigger().target() == TargetType.RESULT
+                    ? calculate(operationType, operand1, operand2)
+                    : null;
+            if (!isTriggered(operand1, operand2, triggerValue, rule)) {
+                continue;
             }
             logger.info("Pre-calculating rule '{}': {} {} on {}", rule.getName(), action.operator(), action.value(), action.target());
             if (action.target() == TargetType.OPERAND1) {
