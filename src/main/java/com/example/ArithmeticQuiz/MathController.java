@@ -28,6 +28,6 @@ public class MathController {
     // Endpoint to perform the arithmetic operation on a and b and the operation type
     @PostMapping("/{operation}")
     public Map<String,BigDecimal> doOperation(@PathVariable String operation, @Valid @RequestBody CalculationRequest request){
-        return Map.of("result: ",mathOperation.doOperation(operation, request.a(), request.b()));
+        return Map.of("result",mathOperation.doOperation(operation, request.a(), request.b()));
     }
 }
